@@ -1,3 +1,4 @@
+%define parse.error verbose
 %code top{
     #include <iostream>
     #include <queue>
@@ -20,7 +21,9 @@
     StmtNode* stmttype;
     ExprNode* exprtype;
     Type* type;
-    IDList* idlist;
+    IDList* idList;
+    InitIDList* initIdList;
+    ParaList* paraList;
 }
 
 %start Program
@@ -36,9 +39,11 @@
 %token RETURN
 
 %nterm <stmttype> Stmts Stmt AssignStmt BlockStmt IfStmt ReturnStmt DeclStmt FuncDef InitStmt WhileStmt FuncCallNoReturn FuncCallWithReturn
-%nterm <exprtype> Exp AddExp Cond LOrExp PrimaryExp LVal RelExp LAndExp
+%nterm <exprtype> Exp AddExp Cond LOrExp PrimaryExp LVal RelExp LAndExp /*ParaExpr*/
 %nterm <type> Type
-%nterm <idlist> IDList
+%nterm <idList> IDList
+%nterm <initIdList> InitIDList
+%nterm <paraList> ParaList
 
 %precedence THEN
 %precedence ELSE
@@ -65,7 +70,6 @@ Stmt
     | FuncCallWithReturn {$$=$1;}
     | InitStmt {$$=$1;}
     | WhileStmt {$$=$1;}
-
     ;
 LVal
     : ID {
@@ -83,23 +87,66 @@ LVal
     ;
 IDList
     :
+    ID {
+        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        identifiers->install($1, se);
+        std::queue<SymbolEntry*> idList;
+        idList.push(se);
+        $$ = new IDList(idList);
+        delete []$1;
+    }
+    |
     IDList COMMA ID {
-        SymbolEntry *se;
-        se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
+        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
         identifiers->install($3, se);
-	std::queue<SymbolEntry*> q = $1->getList();
-        q.push(se);
-        $$ = new IDList(q);
+	    std::queue<SymbolEntry*> idList = $1->getList();
+        idList.push(se);
+        $$ = new IDList(idList);
         delete []$3;
     }
-    | ID {
-        SymbolEntry *se;
-        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+    ;
+InitIDList
+    :
+    ID ASSIGN Exp {
+        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
         identifiers->install($1, se);
-        std::queue<SymbolEntry*> q;
-        q.push(se);
-        $$ = new IDList(q);
-        delete []$1;
+        std::queue<SymbolEntry*> idList;
+        std::queue<ExprNode*> nums;
+        idList.push(se);
+        nums.push($3);
+        $$ = new InitIDList(idList, nums);
+        // delete []$2;
+    }
+    |
+    InitIDList COMMA ID ASSIGN Exp {
+        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
+        identifiers->install($3, se);
+        std::queue<SymbolEntry*> idList = $1->getList();
+        std::queue<ExprNode*> nums = $1->getNums();
+        idList.push(se);
+        nums.push($5);
+        $$ = new InitIDList(idList, nums);
+    }
+    ;
+ParaList
+    :
+    Type ID {
+        SymbolEntry *se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        
+        identifiers->install($2, se);
+        std::queue<SymbolEntry*> idList;
+        idList.push(se);
+        $$ = new ParaList(idList);
+        // delete []$2;
+    }
+    |
+    ParaList COMMA Type ID{
+        SymbolEntry *se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel());
+        identifiers->install($4, se);
+        std::queue<SymbolEntry*> idList = $1->getList();
+        idList.push(se);
+        $$ = new ParaList(idList);
+        // delete []$2;
     }
     ;
 AssignStmt
@@ -212,11 +259,11 @@ Type
 DeclStmt
     :
     Type IDList SEMICOLON {
-        std::queue<SymbolEntry*> idlist=$2->getList();
-        $$ = new DeclStmt(new IDList(idlist));
-        delete []$2;
+        $$ = new DeclStmt($2);
+        // delete []$2;
     }
     ;
+
 FuncDef
     :
     Type ID {
@@ -225,15 +272,12 @@ FuncDef
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
         identifiers->install($2, se);
         identifiers = new SymbolTable(identifiers);
-        delete []$2;
     }
-    LPAREN RPAREN
-    BlockStmt
-    {
+    LPAREN ParaList RPAREN BlockStmt
+    {   
         SymbolEntry *se;
         se = identifiers->lookup($2);
-        assert(se != nullptr);
-        $$ = new FunctionDef(se, $6);
+        $$ = new FunctionDef(se, $4, $5);
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
@@ -262,21 +306,20 @@ FuncCallWithReturn
     ;
 InitStmt
     :
-    Type ID ASSIGN Exp SEMICOLON {
-        SymbolEntry *se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
-        identifiers->install($2, se);
-        $$ = new InitStmt(new Id(se), $4);
-        delete []$2;
+    Type InitIDList SEMICOLON {
+        // SymbolEntry *se;
+        // se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        // identifiers->install($2, se);
+        $$ = new InitStmt($2);
+        // delete []$2;
     }
     ;
 WhileStmt
     :
     WHILE LPAREN Cond RPAREN Stmt{
-    	$$ = new IfStmt($3, $5);
+    	$$ = new WhileStmt($3, $5);
     }
     ;
-
 %%
 
 int yyerror(char const* message)

@@ -68,16 +68,46 @@ void IDList::output(int level)
 {
     std::string name, type;
     int scope;
-    while(!this->q.empty()) {
+    while(!this->getList().empty()) {
     	SymbolEntry* se;
-        se = this->q.front();
+        se = this->idList.front();
     	name = se->toStr();
     	type = se->getType()->toStr();
     	scope = dynamic_cast<IdentifierSymbolEntry*>(se)->getScope();
+    	this->idList.pop();
     	fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',
     	        name.c_str(), scope, type.c_str());
-    	}
-    	this->q.pop();
+    }
+}
+
+void InitIDList::output(int level)
+{
+    std::string name, type;
+    int scope;
+    while(!this->getList().empty()) {
+    	SymbolEntry* se = this->idList.front();
+    	name = se->toStr();
+    	type = se->getType()->toStr();
+    	scope = dynamic_cast<IdentifierSymbolEntry*>(se)->getScope();
+    	this->idList.pop();
+    	fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',name.c_str(), scope, type.c_str());
+        this->nums.front()->output(level + 4);
+        this->nums.pop();
+    }
+}
+
+void ParaList::output(int level)
+{
+    std::string name, type;
+    int scope;
+    while(!this->getList().empty()) {
+    	SymbolEntry* se = this->idList.front();
+    	name = se->toStr();
+    	type = se->getType()->toStr();
+    	scope = dynamic_cast<IdentifierSymbolEntry*>(se)->getScope();
+    	this->idList.pop();
+    	fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',name.c_str(), scope, type.c_str());
+    }
 }
 
 void CompoundStmt::output(int level)
@@ -97,6 +127,12 @@ void DeclStmt::output(int level)
 {
     fprintf(yyout, "%*cDeclStmt\n", level, ' ');
     idList->output(level + 4);
+}
+
+void InitStmt::output(int level)
+{
+    fprintf(yyout, "%*cInitStmt\n", level, ' ');
+    initIDList->output(level + 4);
 }
 
 void IfStmt::output(int level)
@@ -134,6 +170,7 @@ void FunctionDef::output(int level)
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionDefine function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
+    paraList->output(level + 4);
     stmt->output(level + 4);
 }
 
@@ -157,19 +194,13 @@ void FunctionCallWithReturn::output(int level)
     id->output(level + 4);
 }
 
-void InitStmt::output(int level)
-{
-    fprintf(yyout, "%*cInitStmt\n", level, ' ');
-    id->output(level + 4);
-    expr->output(level + 4);
-}
-
 void WhileStmt::output(int level)
 {
     fprintf(yyout, "%*cWhileStmt\n", level, ' ');
     cond->output(level + 4);
     stmt->output(level + 4);
 }
+
 
 
 

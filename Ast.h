@@ -54,11 +54,34 @@ public:
 class IDList
 {
 private:
-    std::queue<SymbolEntry*> q;
+    std::queue<SymbolEntry*> idList;
 public:
-    IDList(std::queue<SymbolEntry*> q) : q(q){};
+    IDList(std::queue<SymbolEntry*> idList) : idList(idList){};
     void output(int level);
-    std::queue<SymbolEntry*> getList() {return this->q;};
+    std::queue<SymbolEntry*> getList() {return this->idList;};
+};
+
+class InitIDList
+{
+private:
+    std::queue<SymbolEntry*> idList;
+    std::queue<ExprNode*> nums;
+public:
+    InitIDList(std::queue<SymbolEntry*> idList, std::queue<ExprNode*> nums) : idList(idList), nums(nums){};
+    void output(int level);
+    std::queue<SymbolEntry*> getList() {return this->idList;};
+    std::queue<ExprNode*> getNums() {return this->nums;};
+};
+
+class ParaList
+{
+private:
+    std::queue<SymbolEntry*> idList;
+public:
+    ParaList(){};
+    ParaList(std::queue<SymbolEntry*> idList) : idList(idList){};
+    void output(int level);
+    std::queue<SymbolEntry*> getList() {return this->idList;};
 };
 
 class StmtNode : public Node
@@ -88,6 +111,15 @@ private:
     IDList *idList;
 public:
     DeclStmt(IDList *idList) : idList(idList){};
+    void output(int level);
+};
+
+class InitStmt : public StmtNode
+{
+private:
+    InitIDList* initIDList;
+public:
+    InitStmt(InitIDList* initIDList) : initIDList(initIDList){};
     void output(int level);
 };
 
@@ -136,8 +168,9 @@ class FunctionDef : public StmtNode
 private:
     SymbolEntry *se;
     StmtNode *stmt;
+    ParaList *paraList;
 public:
-    FunctionDef(SymbolEntry *se, StmtNode *stmt) : se(se), stmt(stmt){};
+    FunctionDef(SymbolEntry *se, ParaList *paraList, StmtNode *stmt) : se(se), paraList(paraList), stmt(stmt) {};
     void output(int level);
 };
 
@@ -158,16 +191,6 @@ private:
     Id* id;
 public:
     FunctionCallWithReturn(SymbolEntry *se, Id* id) : se(se), id(id){};
-    void output(int level);
-};
-
-class InitStmt : public StmtNode
-{
-private:
-    Id* id;
-    ExprNode* expr;
-public:
-    InitStmt(Id* id, ExprNode* expr) : id(id), expr(expr) {};
     void output(int level);
 };
 
