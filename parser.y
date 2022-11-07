@@ -115,7 +115,7 @@ InitIDList
         idList.push(se);
         nums.push($3);
         $$ = new InitIDList(idList, nums);
-        // delete []$2;
+        delete $1;
     }
     |
     InitIDList COMMA ID ASSIGN Exp {
@@ -126,6 +126,7 @@ InitIDList
         idList.push(se);
         nums.push($5);
         $$ = new InitIDList(idList, nums);
+        delete $3;
     }
     ;
 ParaList
@@ -137,7 +138,7 @@ ParaList
         std::queue<SymbolEntry*> idList;
         idList.push(se);
         $$ = new ParaList(idList);
-        // delete []$2;
+        delete []$2;
     }
     |
     ParaList COMMA Type ID{
@@ -146,7 +147,11 @@ ParaList
         std::queue<SymbolEntry*> idList = $1->getList();
         idList.push(se);
         $$ = new ParaList(idList);
-        // delete []$2;
+        delete $4;
+    }
+    |
+    %empty {
+        $$ = new ParaList();
     }
     ;
 AssignStmt
@@ -260,10 +265,8 @@ DeclStmt
     :
     Type IDList SEMICOLON {
         $$ = new DeclStmt($2);
-        // delete []$2;
     }
     ;
-
 FuncDef
     :
     Type ID {
@@ -277,7 +280,7 @@ FuncDef
     {   
         SymbolEntry *se;
         se = identifiers->lookup($2);
-        $$ = new FunctionDef(se, $4, $5);
+        $$ = new FunctionDef(se, $5, $7);
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;

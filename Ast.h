@@ -167,8 +167,8 @@ class FunctionDef : public StmtNode
 {
 private:
     SymbolEntry *se;
-    StmtNode *stmt;
     ParaList *paraList;
+    StmtNode *stmt;
 public:
     FunctionDef(SymbolEntry *se, ParaList *paraList, StmtNode *stmt) : se(se), paraList(paraList), stmt(stmt) {};
     void output(int level);
