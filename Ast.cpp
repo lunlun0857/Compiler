@@ -18,6 +18,22 @@ void Ast::output()
         root->output(4);
 }
 
+void SingelExpr::output(int level)
+{
+    std::string op_str;
+    switch(op)
+    {
+        case NOT:
+            op_str = "not";
+            break;
+        case MIN:
+            op_str = "minus";
+            break;
+    }
+    fprintf(yyout, "%*cSingelExpr\top: %s\n", level, ' ', op_str.c_str());
+    expr1->output(level + 4);
+}
+
 void BinaryExpr::output(int level)
 {
     std::string op_str;
@@ -29,6 +45,15 @@ void BinaryExpr::output(int level)
         case SUB:
             op_str = "sub";
             break;
+        case MUL:
+            op_str = "mul";
+            break;
+        case DIV:
+            op_str = "div";
+            break;
+        case MOD:
+            op_str = "mod";
+            break;     
         case AND:
             op_str = "and";
             break;
@@ -37,6 +62,21 @@ void BinaryExpr::output(int level)
             break;
         case LESS:
             op_str = "less";
+            break;
+        case GREATER:
+            op_str = "greater";
+            break; 
+        case LESSEQ:
+            op_str = "lesseq";
+            break;
+        case GREATEREQ:
+            op_str = "greatereq";
+            break;
+        case EQUAL:
+            op_str = "equal";
+            break;
+        case NOTEQUAL:
+            op_str = "notequal";
             break;
     }
     fprintf(yyout, "%*cBinaryExpr\top: %s\n", level, ' ', op_str.c_str());
@@ -80,6 +120,17 @@ void IDList::output(int level)
     }
 }
 
+void IDList::setType(Type* type){
+    std::queue<SymbolEntry*> idl;
+        while(!this->idList.empty()){
+        SymbolEntry* se=this->idList.front();
+        se->setType(type);
+        this->idList.pop();
+        idl.push(se);
+        }
+        this->idList=idl;
+}
+
 void InitIDList::output(int level)
 {
     std::string name, type;
@@ -94,6 +145,18 @@ void InitIDList::output(int level)
         this->nums.front()->output(level + 4);
         this->nums.pop();
     }
+}
+
+void InitIDList::setType(Type* type)
+{
+    std::queue<SymbolEntry*> idl;
+        while(!this->idList.empty()){
+            SymbolEntry* se=this->idList.front();
+            se->setType(type);
+            this->idList.pop();
+            idl.push(se);
+        }
+        this->idList=idl;
 }
 
 void ParaList::output(int level)
@@ -129,6 +192,14 @@ void DeclStmt::output(int level)
     idList->output(level + 4);
 }
 
+void EmptyStmt::output(int level)
+{
+    fprintf(yyout, "%*cEmptyStmt\n", level, ' ');
+    if(expr!= nullptr){
+        expr->output(level + 4);
+    }
+}
+
 void InitStmt::output(int level)
 {
     fprintf(yyout, "%*cInitStmt\n", level, ' ');
@@ -153,7 +224,10 @@ void IfElseStmt::output(int level)
 void ReturnStmt::output(int level)
 {
     fprintf(yyout, "%*cReturnStmt\n", level, ' ');
+    if(retValue!=nullptr)
     retValue->output(level + 4);
+    if(funcCall!=nullptr)
+    funcCall->output(level + 4);
 }
 
 void AssignStmt::output(int level)
@@ -174,24 +248,25 @@ void FunctionDef::output(int level)
     stmt->output(level + 4);
 }
 
-void FunctionCallNoReturn::output(int level)
+void FuncCall::output(int level)
 {
     std::string name, type;
     name = se->toStr();
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionCall function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
-    id->output(level + 4);
+    if(idList!=nullptr)
+    idList->output(level + 4);
 }
 
-void FunctionCallWithReturn::output(int level)
+void FuncAssignStmt::output(int level)
 {
-    std::string name, type;
-    name = se->toStr();
-    type = se->getType()->toStr();
-    fprintf(yyout, "%*cFunctionCall function name: %s, type: %s\n", level, ' ', 
-            name.c_str(), type.c_str());
+    fprintf(yyout, "%*cFuncAssignStmt\n", level, ' ');
+    if(lval!=nullptr)
+    lval->output(level + 4);
+    if(id!=nullptr)
     id->output(level + 4);
+    stmt->output(level + 4);
 }
 
 void WhileStmt::output(int level)

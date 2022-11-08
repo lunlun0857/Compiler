@@ -2,7 +2,9 @@
 #define __AST_H__
 
 #include <fstream>
+#include "Type.h"
 #include <queue>
+#include "SymbolTable.h"
 
 class SymbolEntry;
 
@@ -32,8 +34,19 @@ private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {ADD, SUB, AND, OR, LESS};
+    enum {ADD, SUB, MUL, DIV, MOD ,AND, OR, LESS, GREATER, NOTEQUAL, EQUAL, LESSEQ, GREATEREQ};
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){};
+    void output(int level);
+};
+
+class SingelExpr : public ExprNode
+{
+private:
+    int op;
+    ExprNode *expr1;
+public:
+    enum {MIN,NOT};
+    SingelExpr(SymbolEntry *se, int op, ExprNode*expr1) : ExprNode(se), op(op), expr1(expr1){};
     void output(int level);
 };
 
@@ -59,6 +72,7 @@ public:
     IDList(std::queue<SymbolEntry*> idList) : idList(idList){};
     void output(int level);
     std::queue<SymbolEntry*> getList() {return this->idList;};
+    void setType(Type *type);
 };
 
 class InitIDList
@@ -71,6 +85,7 @@ public:
     void output(int level);
     std::queue<SymbolEntry*> getList() {return this->idList;};
     std::queue<ExprNode*> getNums() {return this->nums;};
+    void setType(Type *type);
 };
 
 class ParaList
@@ -114,6 +129,15 @@ public:
     void output(int level);
 };
 
+class EmptyStmt : public StmtNode
+{
+public:
+    ExprNode* expr;
+    EmptyStmt(){};
+    EmptyStmt(ExprNode* expr) : expr(expr){};
+    void output(int level);
+};
+
 class InitStmt : public StmtNode
 {
 private:
@@ -144,15 +168,6 @@ public:
     void output(int level);
 };
 
-class ReturnStmt : public StmtNode
-{
-private:
-    ExprNode *retValue;
-public:
-    ReturnStmt(ExprNode*retValue) : retValue(retValue) {};
-    void output(int level);
-};
-
 class AssignStmt : public StmtNode
 {
 private:
@@ -174,27 +189,29 @@ public:
     void output(int level);
 };
 
-class FunctionCallNoReturn : public StmtNode
+class FuncAssignStmt : public StmtNode
+{
+private:
+    Type *type;
+    Id *id;
+    ExprNode *lval;
+    StmtNode *stmt;
+public:
+    FuncAssignStmt(ExprNode *lval, StmtNode *stmt) : lval(lval), stmt(stmt) {};
+    FuncAssignStmt(Type *type, Id *id, StmtNode *stmt) : type(type), id(id), stmt(stmt) {};
+    void output(int level);
+};
+
+class FuncCall : public StmtNode
 {
 private:
     SymbolEntry *se;
-    Id* id;
+    IDList *idList;
 public:
-    FunctionCallNoReturn(SymbolEntry *se, Id* id) : se(se), id(id){};
+    FuncCall(SymbolEntry *se) : se(se) {};
+    FuncCall(SymbolEntry *se, IDList *idList) : se(se), idList(idList) {};
     void output(int level);
 };
-
-class FunctionCallWithReturn : public StmtNode
-{   
-private:
-    SymbolEntry *se;
-    Id* id;
-public:
-    FunctionCallWithReturn(SymbolEntry *se, Id* id) : se(se), id(id){};
-    void output(int level);
-};
-
-
 
 class WhileStmt : public StmtNode
 {
@@ -203,6 +220,17 @@ private:
     StmtNode* stmt;
 public:
     WhileStmt(ExprNode* cond, StmtNode* stmt) : cond(cond), stmt(stmt) {};
+    void output(int level);
+};
+
+class ReturnStmt : public StmtNode
+{
+private:
+    ExprNode *retValue;
+    StmtNode *funcCall;
+public:
+    ReturnStmt(ExprNode*retValue) : retValue(retValue) {};
+    ReturnStmt(StmtNode *funcCall) : funcCall(funcCall) {};
     void output(int level);
 };
 
