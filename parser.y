@@ -128,46 +128,6 @@ PrimaryExp
         $$=$1;
     }
     ;
-FuncExpr
-    :
-    ID LPAREN IDList RPAREN{
-        Type *funcType;
-        funcType = new FunctionType(TypeSystem::voidType,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
-        identifiers = new SymbolTable(identifiers);
-    	$$ = new FuncCall(se, $3);
-        delete []$1;   
-    }
-    | ID LPAREN RPAREN{
-        Type *funcType;
-        funcType = new FunctionType(TypeSystem::voidType,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
-        identifiers = new SymbolTable(identifiers);
-    	$$ = new FuncCall(se);
-        delete []$1;   
-    }
-    |
-    LPAREN ID LPAREN IDList RPAREN RPAREN{
-        Type *funcType;
-        funcType = new FunctionType(TypeSystem::voidType,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
-        identifiers = new SymbolTable(identifiers);
-    	$$ = new FuncCall(se, $4);
-        delete []$2;   
-    }
-    | LPAREN ID LPAREN RPAREN RPAREN{
-        Type *funcType;
-        funcType = new FunctionType(TypeSystem::voidType,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
-        identifiers = new SymbolTable(identifiers);
-    	$$ = new FuncCall(se);
-        delete []$2;   
-    }
-    ;
 NotExp
     :
     ParenExp {$$ = $1;}
@@ -380,7 +340,7 @@ ReturnStmt
     RETURN Exp SEMICOLON {
         $$ = new ReturnStmt($2);
     }
-    | RETURN FuncCall {
+    | RETURN FuncExpr SEMICOLON {
         $$ = new ReturnStmt($2);
     }
     ;
@@ -452,6 +412,46 @@ FuncDef
         delete []$2;
     }
     ;
+FuncExpr
+    :
+    ID LPAREN IDList RPAREN{
+        Type *funcType;
+        funcType = new FunctionType(TypeSystem::voidType,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $1, identifiers->getLevel());
+        identifiers->install($1, se);
+        identifiers = new SymbolTable(identifiers);
+    	$$ = new FuncExpr(se, $3);
+        delete []$1;   
+    }
+    | ID LPAREN RPAREN{
+        Type *funcType;
+        funcType = new FunctionType(TypeSystem::voidType,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $1, identifiers->getLevel());
+        identifiers->install($1, se);
+        identifiers = new SymbolTable(identifiers);
+    	$$ = new FuncExpr(se);
+        delete []$1;   
+    }
+    |
+    LPAREN ID LPAREN IDList RPAREN RPAREN{
+        Type *funcType;
+        funcType = new FunctionType(TypeSystem::voidType,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        identifiers = new SymbolTable(identifiers);
+    	$$ = new FuncExpr(se, $4);
+        delete []$2;   
+    }
+    | LPAREN ID LPAREN RPAREN RPAREN{
+        Type *funcType;
+        funcType = new FunctionType(TypeSystem::voidType,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        identifiers = new SymbolTable(identifiers);
+    	$$ = new FuncExpr(se);
+        delete []$2;   
+    }
+    ;
 FuncAssignStmt
     :
     LVal ASSIGN ID LPAREN RPAREN SEMICOLON {
@@ -460,7 +460,7 @@ FuncAssignStmt
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $3, identifiers->getLevel());
         identifiers->install($3, se);
         identifiers = new SymbolTable(identifiers);
-        $$ = new FuncAssignStmt($1, new FuncCall(se));
+        $$ = new FuncAssignStmt($1, new FuncExpr(se));
         delete []$3;
     } 
     | LVal ASSIGN ID LPAREN IDList RPAREN SEMICOLON {
@@ -469,7 +469,7 @@ FuncAssignStmt
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $3, identifiers->getLevel());
         identifiers->install($3, se);
         identifiers = new SymbolTable(identifiers);
-        $$ = new FuncAssignStmt($1, new FuncCall(se, $5));
+        $$ = new FuncAssignStmt($1, new FuncExpr(se, $5));
         delete []$3;
     }
     | Type ID ASSIGN ID LPAREN RPAREN SEMICOLON {
@@ -480,7 +480,7 @@ FuncAssignStmt
         identifiers = new SymbolTable(identifiers);
         SymbolEntry *se0 = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se0);
-        $$ = new FuncAssignStmt($1, new Id(se0), new FuncCall(se));
+        $$ = new FuncAssignStmt($1, new Id(se0), new FuncExpr(se));
         delete []$4;
     }
     | Type ID ASSIGN ID LPAREN IDList RPAREN SEMICOLON {
@@ -492,7 +492,7 @@ FuncAssignStmt
         identifiers = new SymbolTable(identifiers);
         SymbolEntry *se0 = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se0);
-        $$ = new FuncAssignStmt($1, new Id(se0), new FuncCall(se, $6));
+        $$ = new FuncAssignStmt($1, new Id(se0), new FuncExpr(se, $6));
         delete []$4;
     }
     ;
