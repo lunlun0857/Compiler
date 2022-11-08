@@ -196,20 +196,34 @@ private:
     Id *id;
     ExprNode *lval;
     StmtNode *stmt;
+    // ExprNode *expr;
 public:
     FuncAssignStmt(ExprNode *lval, StmtNode *stmt) : lval(lval), stmt(stmt) {};
+    // FuncAssignStmt(ExprNode *lval, ExprNode *expr) : lval(lval), expr(expr) {};
     FuncAssignStmt(Type *type, Id *id, StmtNode *stmt) : type(type), id(id), stmt(stmt) {};
+    // FuncAssignStmt(Type *type, Id *id, ExprNode *expr) : type(type), id(id), expr(expr) {};
     void output(int level);
 };
 
 class FuncCall : public StmtNode
 {
 private:
-    FuncExpr* funcExpr;
+    SymbolEntry *se;
+    IDList *idList;
 public:
-    FuncCall(FuncExpr* funcExpr) : funcExpr(funcExpr){};
+    FuncCall(SymbolEntry *se) : se(se) {};
+    FuncCall(SymbolEntry *se, IDList *idList) : se(se), idList(idList) {};
     void output(int level);
 };
+
+// class FuncCall : public StmtNode
+// {
+// private:
+//     FuncExpr* funcExpr;
+// public:
+//     FuncCall(FuncExpr* funcExpr) : funcExpr(funcExpr){};
+//     void output(int level);
+// };
 
 class FuncExpr : public ExprNode
 {
@@ -220,7 +234,7 @@ public:
     FuncExpr(SymbolEntry *se) : se(se) {};
     FuncExpr(SymbolEntry *se, IDList *idList) : se(se), idList(idList) {};
     void output(int level);
-}
+};
 
 class WhileStmt : public StmtNode
 {
