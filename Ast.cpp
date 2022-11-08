@@ -250,10 +250,15 @@ void FunctionDef::output(int level)
 
 void FuncCall::output(int level)
 {
+    fprintf(yyout, "%*cFunctionCall function name: %s, type: %s\n", level, ' ');
+}
+
+void FuncExpr::output(int level)
+{
     std::string name, type;
     name = se->toStr();
     type = se->getType()->toStr();
-    fprintf(yyout, "%*cFunctionCall function name: %s, type: %s\n", level, ' ', 
+    fprintf(yyout, "%*cFunctionExpr function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
     if(idList!=nullptr)
     idList->output(level + 4);

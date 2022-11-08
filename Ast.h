@@ -205,13 +205,22 @@ public:
 class FuncCall : public StmtNode
 {
 private:
+    FuncExpr* funcExpr;
+public:
+    FuncCall(FuncExpr* funcExpr) : funcExpr(funcExpr){};
+    void output(int level);
+};
+
+class FuncExpr : public ExprNode
+{
+private:
     SymbolEntry *se;
     IDList *idList;
 public:
-    FuncCall(SymbolEntry *se) : se(se) {};
-    FuncCall(SymbolEntry *se, IDList *idList) : se(se), idList(idList) {};
+    FuncExpr(SymbolEntry *se) : se(se) {};
+    FuncExpr(SymbolEntry *se, IDList *idList) : se(se), idList(idList) {};
     void output(int level);
-};
+}
 
 class WhileStmt : public StmtNode
 {
