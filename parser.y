@@ -52,18 +52,21 @@ FuncCall FuncAssignStmt EmptyStmt
 %precedence ELSE
 %%
 Program
-    : Stmts {
+    :
+    Stmts {
         ast.setRoot($1);
     }
     ;
 Stmts
-    : Stmt {$$=$1;}
-    | Stmts Stmt{
+    :
+    Stmt {$$=$1;}
+    |
+    Stmts Stmt{
         $$ = new SeqNode($1, $2);
     }
     ;
 Stmt
-    : AssignStmt {$$=$1;}
+    :AssignStmt {$$=$1;}
     | BlockStmt {$$=$1;}
     | IfStmt {$$=$1;}
     | ReturnStmt {$$=$1;}
@@ -74,6 +77,17 @@ Stmt
     | InitStmt {$$=$1;}
     | WhileStmt {$$=$1;}
     | EmptyStmt {$$=$1;}
+    ;
+Type
+    : INT {
+        $$ = TypeSystem::intType;
+    }
+    | VOID {
+        $$ = TypeSystem::voidType;
+    }
+    | CONST INT{
+    	$$ = TypeSystem::constIntType;
+    }
     ;
 LVal
     : ID {
@@ -103,6 +117,12 @@ IfStmt
         $$ = new IfElseStmt($3, $5, $7);
     }
     ;
+WhileStmt
+    :
+    WHILE LPAREN Cond RPAREN Stmt{
+    	$$ = new WhileStmt($3, $5);
+    }
+    ;
 Exp
     :
     AddExp {$$ = $1;}
@@ -126,6 +146,42 @@ PrimaryExp
     }
     | FuncExpr{
         $$=$1;
+    }
+    ;
+ParenExp
+    :
+    PrimaryExp {$$ = $1;}
+    |
+    LPAREN PrimaryExp RPAREN{$$=$2;}
+    |
+    LPAREN ParenExp MUL PrimaryExp RPAREN
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::MUL, $2, $4);
+    }
+    |
+    LPAREN ParenExp DIV PrimaryExp RPAREN
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::DIV, $2, $4);
+    }
+    |
+    LPAREN ParenExp MOD PrimaryExp RPAREN
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::MOD, $2, $4);
+    }
+    |
+    LPAREN ParenExp ADD PrimaryExp RPAREN
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::ADD, $2, $4);
+    }
+    |
+    LPAREN ParenExp SUB PrimaryExp RPAREN
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::SUB, $2, $4);
     }
     ;
 NotExp
@@ -180,42 +236,6 @@ AddExp
         $$ = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
     }
     ;
-ParenExp
-    :
-    PrimaryExp {$$ = $1;}
-    |
-    LPAREN PrimaryExp RPAREN{$$=$2;}
-    |
-    LPAREN ParenExp MUL PrimaryExp RPAREN
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::MUL, $2, $4);
-    }
-    |
-    LPAREN ParenExp DIV PrimaryExp RPAREN
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::DIV, $2, $4);
-    }
-    |
-    LPAREN ParenExp MOD PrimaryExp RPAREN
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::MOD, $2, $4);
-    }
-    |
-    LPAREN ParenExp ADD PrimaryExp RPAREN
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::ADD, $2, $4);
-    }
-    |
-    LPAREN ParenExp SUB PrimaryExp RPAREN
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::SUB, $2, $4);
-    }
-    ;
 RelExp
     :
     AddExp {$$ = $1;}
@@ -254,6 +274,26 @@ RelExp
     {
         SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::NOTEQUAL, $1, $3);
+    }
+    ;
+LAndExp
+    :
+    RelExp {$$ = $1;}
+    |
+    LAndExp AND RelExp
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
+    }
+    ;
+LOrExp
+    :
+    LAndExp {$$ = $1;}
+    |
+    LOrExp OR LAndExp
+    {
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new BinaryExpr(se, BinaryExpr::OR, $1, $3);
     }
     ;
 IDList
@@ -324,55 +364,14 @@ ParaList
         $$ = new ParaList();
     }
     ;
-BlockStmt
-    :   LBRACE 
-        {identifiers = new SymbolTable(identifiers);} 
-        Stmts RBRACE 
-        {
-            $$ = new CompoundStmt($3);
-            SymbolTable *top = identifiers;
-            identifiers = identifiers->getPrev();
-            delete top;
-        }
-    ;
-ReturnStmt
+EmptyStmt
     :
-    RETURN Exp SEMICOLON {
-        $$ = new ReturnStmt($2);
+    AddExp SEMICOLON {
+        $$ = new EmptyStmt($1);
     }
-    | RETURN FuncExpr SEMICOLON {
-        $$ = new ReturnStmt($2);
-    }
-    ;
-LAndExp
-    :
-    RelExp {$$ = $1;}
     |
-    LAndExp AND RelExp
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
-    }
-    ;
-LOrExp
-    :
-    LAndExp {$$ = $1;}
-    |
-    LOrExp OR LAndExp
-    {
-        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::OR, $1, $3);
-    }
-    ;
-Type
-    : INT {
-        $$ = TypeSystem::intType;
-    }
-    | VOID {
-        $$ = TypeSystem::voidType;
-    }
-    | CONST INT{
-    	$$ = TypeSystem::constIntType;
+    SEMICOLON {
+        $$ = new EmptyStmt();
     }
     ;
 DeclStmt
@@ -382,14 +381,11 @@ DeclStmt
         $$ = new DeclStmt($2);
     }
     ;
-EmptyStmt
+InitStmt
     :
-    AddExp SEMICOLON {
-        $$ = new EmptyStmt($1);
-    }
-    |
-    SEMICOLON {
-        $$ = new EmptyStmt();
+    Type InitIDList SEMICOLON {
+        $2->setType($1);
+        $$ = new InitStmt($2);
     }
     ;
 FuncDef
@@ -442,7 +438,8 @@ FuncExpr
     	$$ = new FuncExpr(se, $4);
         delete []$2;   
     }
-    | LPAREN ID LPAREN RPAREN RPAREN{
+    |
+    LPAREN ID LPAREN RPAREN RPAREN{
         Type *funcType;
         funcType = new FunctionType(TypeSystem::voidType,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
@@ -462,7 +459,7 @@ FuncAssignStmt
         identifiers = new SymbolTable(identifiers);
         $$ = new FuncAssignStmt($1, new FuncExpr(se));
         delete []$3;
-    } 
+    }
     | LVal ASSIGN ID LPAREN IDList RPAREN SEMICOLON {
     	Type *funcType;
         funcType = new FunctionType(TypeSystem::intType,{});
@@ -502,18 +499,25 @@ FuncCall
         $$ = new FuncCall($1);
     }
     ;
-InitStmt
+BlockStmt
     :
-    Type InitIDList SEMICOLON {
-        $2->setType($1);
-        $$ = new InitStmt($2);
-        // delete []$2;
-    }
+    LBRACE 
+        {identifiers = new SymbolTable(identifiers);} 
+        Stmts RBRACE 
+        {
+            $$ = new CompoundStmt($3);
+            SymbolTable *top = identifiers;
+            identifiers = identifiers->getPrev();
+            delete top;
+        }
     ;
-WhileStmt
+ReturnStmt
     :
-    WHILE LPAREN Cond RPAREN Stmt{
-    	$$ = new WhileStmt($3, $5);
+    RETURN Exp SEMICOLON {
+        $$ = new ReturnStmt($2);
+    }
+    | RETURN FuncExpr SEMICOLON {
+        $$ = new ReturnStmt($2);
     }
     ;
 %%
